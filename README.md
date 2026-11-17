@@ -45,6 +45,8 @@ The public source does not grant access to hosted PARALLAX services. Organizatio
 
 ## Current limits
 
+See the [Codex Desktop feature parity audit](docs/CODEX-DESKTOP-PARITY.md) for the capability matrix, missing workflows and acceptance criteria.
+
 Windows is the only implemented desktop host. Mobile/web continuity, aggregated cloud resources, general CONTINUUM conversation, broad workspace search, provider/model integration, installer signing and automatic updates remain incomplete. Project task/subtask creation requires the corresponding service hierarchy API. Local terminals close with Station; cloud execution is owned by the execution service. Drafts do not sync between devices.
 
 ## Structure
