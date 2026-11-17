@@ -1,0 +1,27 @@
+{
+  "name": "@parallax/station",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build:shell": "node scripts/build-shell.mjs",
+    "check:source": "node scripts/check-source.mjs"
+  },
+  "dependencies": {
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "@headlessui/react": "2.2.10",
+    "@heroicons/react": "2.2.0",
+    "clsx": "2.1.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12",
+    "@tailwindcss/node": "4.3.2",
+    "@tailwindcss/oxide": "4.3.2",
+    "tailwindcss": "4.3.2"
+  }
+}
