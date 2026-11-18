@@ -34,7 +34,7 @@ Copy the private connection JSON into an owner-only WSL file (mode 600), then ru
 node desktop/loopback-relay.mjs /private/path/desktop-view-connection.json 'D:\path\to\station\desktop\windows-loopback-bridge.ps1'
 ```
 
-The relay listens on WSL `127.0.0.1:8760`. The device owner can configure `adb reverse tcp:8760 tcp:8760` over their already authorized ADB connection. This is a development transport, not production pairing or cross-network access. Client storage must protect the dedicated credential. Do not place credentials in URLs.
+The relay listens on WSL `127.0.0.1:8760`. The Android client must use the loopback family actually served by its ADB reverse listener. On the tested Pixel, `http://[::1]:8760` worked while `http://127.0.0.1:8760` timed out before reaching WSL. This does not require changing the WSL listener to IPv6 or exposing it to the network. The mobile development build must explicitly permit that loopback HTTP origin; do not broaden production cleartext policy. The device owner can configure `adb reverse tcp:8760 tcp:8760` over their already authorized ADB connection. This is a development transport, not production pairing or cross-network access. Client storage must protect the dedicated credential. Do not place credentials in URLs.
 
 The relay authenticates the client and permits only the view routes. Its bridge compares the configured credential fingerprint against the current Windows credential before forwarding; an old connection file cannot silently acquire a rotated credential. Restart the relay with an updated private connection file after rotation. No credential rotation UI is supplied yet.
 
