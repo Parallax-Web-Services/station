@@ -17,6 +17,7 @@ jobs:
       - run: npm ci
       - run: npm run check:source
       - run: npm run test:gateway
+      - run: npm run test:desktop
       - run: npm run build:shell
       - shell: pwsh
         run: ./windows/build.ps1
