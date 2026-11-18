@@ -213,8 +213,9 @@ export class AgentGateway {
     const events = session.events.filter(event => event.sequence > after).slice(0, 200);
     return { events, lastSequence: events.at(-1)?.sequence ?? after, resetRequired: after < (session.events[0]?.sequence || 1) - 1, session: this.view(session) };
   }
-  async diff(id) {
-    const project = this.project(this.session(id).projectId);
+  async diff(id) { return this.inspectProject(this.project(this.session(id).projectId)); }
+  async inspection(projectId) { return this.inspectProject(this.project(projectId)); }
+  async inspectProject(project) {
     const git = async args => {
       try { return (await execute('git', ['--no-optional-locks', '-c', 'core.fsmonitor=false', '-c', 'core.pager=cat', '-C', project.root, ...args], { encoding: 'utf8', timeout: 15000, maxBuffer: 512000, windowsHide: true })).stdout; }
       catch { throw failure(422, 'Could not inspect Git changes in this authorized project.'); }
@@ -222,7 +223,10 @@ export class AgentGateway {
     const status = await git(['status', '--porcelain=v1', '--branch', '--ignore-submodules=all']);
     const branch = await git(['branch', '--show-current']);
     const diff = await git(['diff', 'HEAD', '--no-ext-diff', '--no-textconv', '--ignore-submodules=all', '--']);
-    return { branch: branch.trim(), status, diff: diff.slice(0, 256000), truncated: diff.length > 256000 };
+    const head = (await git(['rev-parse', 'HEAD'])).trim();
+    const excerpt = diff.slice(0, 256000);
+    return { projectId: project.id, readOnly: true, head, observedAt: now(), branch: branch.trim(), status, diff: excerpt, truncated: diff.length > 256000,
+      diffSha256: createHash('sha256').update(excerpt).digest('hex') };
   }
   async models() {
     const runtime = await this.runtime(this.projects[0]), result = await runtime.request('model/list', {});

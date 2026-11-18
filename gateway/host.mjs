@@ -9,6 +9,6 @@ const config = JSON.parse(readFileSync(file, 'utf8'));
 const host = config.host || '127.0.0.1', port = config.port || 8754;
 if (!['127.0.0.1', '::1', 'localhost'].includes(host)) throw new Error('The private-config launcher is loopback-only. Use the TLS-configured server entry point for other listeners.');
 const gateway = new AgentGateway({ projects: config.projects, stateDirectory: resolve(config.stateDirectory), command: config.command || 'codex' });
-const server = createGatewayServer({ gateway, token: config.token });
+const server = createGatewayServer({ gateway, token: config.token, inspectionToken: config.inspectionToken, inspectionProjects: config.inspectionProjects });
 server.listen(port, host, () => console.log(`STATION agent gateway listening on http://${host}:${server.address().port}`));
 for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => { gateway.close(); server.close(); setTimeout(() => process.exit(0), 3000).unref(); });

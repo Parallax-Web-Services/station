@@ -7,9 +7,11 @@ import { pathToFileURL } from 'node:url';
 import { AgentGateway } from './service.mjs';
 const digest = value => createHash('sha256').update(value).digest();
 const problem = (status, message) => Object.assign(new Error(message), { status });
-export function createGatewayServer({ gateway, token, tls, origins = ['capacitor://localhost', 'http://localhost', 'https://localhost'] }) {
+export function createGatewayServer({ gateway, token, tls, inspectionToken, inspectionProjects = [], origins = ['capacitor://localhost', 'http://localhost', 'https://localhost'] }) {
   if (typeof token !== 'string' || token.length < 32) throw new Error('A separate gateway token of at least 32 characters is required.');
   const expected = digest(token);
+  if (inspectionToken && (typeof inspectionToken !== 'string' || inspectionToken.length < 32 || inspectionToken === token || !inspectionProjects.length || inspectionProjects.some(id => !gateway.projects.some(project => project.id === id)))) throw new Error('Inspection credentials require a separate token and an explicit configured project allowlist.');
+  const inspectionExpected = inspectionToken ? digest(inspectionToken) : null;
   const handler = async (req, res) => {
     res.setHeader('Content-Type', 'application/json'); res.setHeader('Cache-Control', 'no-store'); res.setHeader('X-Content-Type-Options', 'nosniff');
     const send = (status, body) => { if (!res.destroyed && !res.writableEnded) { res.writeHead(status); res.end(JSON.stringify(body)); } };
@@ -22,7 +24,13 @@ export function createGatewayServer({ gateway, token, tls, origins = ['capacitor
       const url = new URL(req.url, 'http://localhost'), path = url.pathname;
       if (req.method === 'GET' && path === '/health') { send(200, { name: 'PARALLAX STATION agent gateway', version: 1 }); return; }
       const credential = req.headers.authorization?.match(/^Bearer ([A-Za-z0-9_-]+)$/)?.[1];
-      if (!credential || !timingSafeEqual(expected, digest(credential))) throw problem(401, 'A valid gateway device credential is required.');
+      if (!credential) throw problem(401, 'A valid gateway device credential is required.');
+      const supplied = digest(credential), fullAccess = timingSafeEqual(expected, supplied);
+      if (!fullAccess && !(inspectionExpected && timingSafeEqual(inspectionExpected, supplied))) throw problem(401, 'A valid gateway device credential is required.');
+      if (!fullAccess) {
+        const inspection = path.match(/^\/v1\/projects\/([^/]+)\/inspection$/);
+        if (req.method !== 'GET' || !inspection || !inspectionProjects.includes(decodeURIComponent(inspection[1]))) throw problem(403, 'This capability permits only the approved repository inspection.');
+      }
       let input = {};
       if (req.method === 'POST') {
         if (!req.headers['content-type']?.startsWith('application/json')) throw problem(415, 'Send application/json.');
@@ -33,6 +41,7 @@ export function createGatewayServer({ gateway, token, tls, origins = ['capacitor
       }
       let output;
       if (req.method === 'GET' && path === '/v1/projects') output = { projects: gateway.projects };
+      else if (req.method === 'GET' && /^\/v1\/projects\/[^/]+\/inspection$/.test(path)) output = await gateway.inspection(decodeURIComponent(path.split('/')[3]));
       else if (req.method === 'GET' && path === '/v1/sessions') output = { sessions: [...gateway.sessions.values()].map(item => gateway.view(item)) };
       else if (req.method === 'GET' && path === '/v1/models') output = await gateway.models();
       else if (req.method === 'GET' && path === '/v1/auth') output = await gateway.auth();
@@ -69,7 +78,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   if (!['127.0.0.1', '::1', 'localhost'].includes(host) && !tls) throw new Error('Non-loopback listeners require TLS; use a secure tunnel or TLS termination on loopback.');
   const projects = JSON.parse(process.env.STATION_GATEWAY_PROJECTS || '[]');
   const gateway = new AgentGateway({ projects, stateDirectory: process.env.STATION_GATEWAY_STATE || resolve('.state/agent-gateway'), command: process.env.STATION_CODEX_COMMAND || 'codex' });
-  const server = createGatewayServer({ gateway, token: process.env.STATION_GATEWAY_TOKEN, tls });
+  const server = createGatewayServer({ gateway, token: process.env.STATION_GATEWAY_TOKEN, tls, inspectionToken: process.env.STATION_INSPECTION_TOKEN, inspectionProjects: JSON.parse(process.env.STATION_INSPECTION_PROJECTS || '[]') });
   server.listen(port, host, () => console.log(`STATION agent gateway listening on ${tls ? 'https' : 'http'}://${host}:${server.address().port}`));
   for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => { gateway.close(); server.close(); setTimeout(() => process.exit(0), 3000).unref(); });
 }
