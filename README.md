@@ -88,4 +88,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). This is s
 
 ## Optional desktop viewing prototype
 
-The separate [Windows desktop view companion](docs/DESKTOP-VIEW-PROTOTYPE.md) provides authenticated, loopback-only selected-monitor JPEG frames. Native two-monitor capture and reconnect were verified. It is view-only; remote control, unattended access and a second host are not implemented by this prototype.
+The separate [Windows desktop view companion](docs/DESKTOP-VIEW-PROTOTYPE.md) provides authenticated, loopback-only selected-monitor JPEG frames. Native two-monitor capture and reconnect were verified. The accepted transport is view-only. A separate disabled-by-default control-lease prototype is documented, with inconsistent native input delivery still unresolved; unattended access and a second host remain unverified.

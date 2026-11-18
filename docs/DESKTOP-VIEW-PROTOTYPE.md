@@ -22,7 +22,7 @@ Except for `GET /health`, requests require `Authorization: Bearer <dedicated cre
 - `GET /v1/desktop`: host identity, layout revision, monitor identities, physical bounds and scale; explicit capability flags.
 - `GET /v1/frame?monitorId=...&revision=...&maxWidth=960`: a selected-monitor JPEG data URL with physical bounds and capture time. Width is limited to 320–1920.
 
-Refresh inventory on HTTP 409 (changed layout). HTTP 423 means the interactive desktop is unavailable; do not imply access to a locked or secure desktop. Capture concurrency is bounded; 429 means try a later frame. Responses are not cached. No frame files or request logs are written. The API has no input, clipboard, file-transfer or arbitrary proxy endpoint.
+Refresh inventory on HTTP 409 (changed layout). HTTP 423 means the interactive desktop is unavailable; do not imply access to a locked or secure desktop. Capture concurrency is bounded; 429 means try a later frame. Responses are not cached. No frame files or request logs are written. The view routes have no input, clipboard, file-transfer or arbitrary proxy operation. The separate experimental control routes described below require explicit host permission and a fresh lease.
 
 ## Development phone transport from WSL
 
@@ -47,3 +47,5 @@ These checks do not establish phone UI acceptance, two separate hosts, low-laten
 ## Repeatable transport check
 
 Run `node scripts/check-desktop-view.mjs /private/path/desktop-view-connection.json` against an already running companion. For the WSL relay, optionally pass `http://127.0.0.1:8760` as the second argument. The check fetches every available monitor into memory, verifies JPEG framing and host/monitor/layout association, and checks authentication, origin rejection, stale geometry and the absence of input methods. It prints only dimensions, scaling and pass/fail results. It does not save screenshots or prove phone UI acceptance, lock-screen behavior or interactive control.
+
+An optional [interactive control prototype](DESKTOP-CONTROL-PROTOTYPE.md) adds separate explicit leases. Existing view routes stay compatible and control is off by default. Native input delivery is not yet consistently accepted; this does not turn the viewer into an unattended remote desktop.
