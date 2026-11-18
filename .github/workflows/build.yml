@@ -21,3 +21,5 @@ jobs:
       - run: npm run build:shell
       - shell: pwsh
         run: ./windows/build.ps1
+      - shell: pwsh
+        run: ./windows/DesktopViewHost/build.ps1

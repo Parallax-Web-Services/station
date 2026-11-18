@@ -85,3 +85,7 @@ The native suite uses isolated local state and synthetic contract data, exercise
 Station-authored code is [MIT licensed](LICENSE). Included dependencies retain their licenses under `windows/ThirdParty`. Product artwork and trademarks have [separate branding terms](BRANDING.md). The extracted Core code files in this repository are released under MIT; this does not change licensing of the rest of the Core repository.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). This is source availability for an actively developed client; no signed stable binary release is promised yet.
+
+## Optional desktop viewing prototype
+
+The separate [Windows desktop view companion](docs/DESKTOP-VIEW-PROTOTYPE.md) provides authenticated, loopback-only selected-monitor JPEG frames. Native two-monitor capture and reconnect were verified. It is view-only; remote control, unattended access and a second host are not implemented by this prototype.

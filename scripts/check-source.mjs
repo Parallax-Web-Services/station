@@ -13,7 +13,7 @@ async function walk(dir){for(const item of await readdir(dir,{withFileTypes:true
   if(['workspace-profiles','shell-profile','drafts','evidence'].includes(item.name))errors.push(name+': private state must not be published');
   await walk(file);continue;
  }
- if(/^\.env(?:\.|$)/.test(item.name)||/\.(?:pfx|p12|key)$/i.test(item.name)||item.name==='workspace-context.json')errors.push(name+': private file');
+ if(/^\.env(?:\.|$)/.test(item.name)||/\.(?:pfx|p12|key)$/i.test(item.name)||['workspace-context.json','pairing.json','desktop-view-connection.json'].includes(item.name))errors.push(name+': private file');
  const content=await readFile(file);
  if(secrets.some(pattern=>pattern.test(content.toString('utf8'))))errors.push(name+': possible secret; inspect locally');
 }}

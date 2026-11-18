@@ -14,6 +14,7 @@
     <Product>Parallax Station</Product>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="DesktopViewHost\**\*.cs" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
     <Resource Include="Assets\Parallax.png" />
     <Resource Include="Assets\Brands\*.png" />

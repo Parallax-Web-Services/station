@@ -19,3 +19,6 @@ evidence/
 
 .state/
 gateway-config.json
+
+pairing.json
+desktop-view-connection.json
