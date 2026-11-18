@@ -144,3 +144,37 @@ test('an immediate Stop waits for runtime readiness and issues one interruption 
     assert.equal(runtime.calls.filter(call => call.method === 'turn/interrupt').length, 1);
   } finally { f.clean(); }
 });
+
+test('first active turn without runtime pagination preserves replay and scoped decisions', async () => {
+  const f = fixture();
+  try {
+    const session = (await f.gateway.create('sample')).session;
+    const turn = (await f.gateway.turn(session.id, { text: 'Synthetic first turn' })).turn;
+    const runtime = f.runtimes[0], request = runtime.request.bind(runtime);
+    runtime.request = async (method, params) => {
+      if (method === 'thread/items/list') throw Object.assign(new Error('thread/items/list is not supported yet'), { runtimeCode: -32601 });
+      return request(method, params);
+    };
+    runtime.options.onRequest({ id: 990, method: 'item/commandExecution/requestApproval', params: { threadId: session.threadId, turnId: turn.id, command: 'synthetic', cwd: f.directory } }, runtime);
+    const snapshot = await f.gateway.history(session.id);
+    assert.equal(snapshot.replayOnly, true);
+    assert.equal(snapshot.historyIncomplete, true);
+    assert.equal(snapshot.replayAfter, 0);
+    assert.equal(snapshot.session.status, 'waiting');
+    assert.equal(snapshot.pendingRequests.length, 1);
+    assert.ok((await f.gateway.events(session.id, 0)).events.some(event => event.type.endsWith('/requestApproval')));
+    await assert.rejects(() => f.gateway.history(session.id, 'older-page'), /not supported yet/);
+    runtime.options.onEvent({ method: 'turn/completed', params: { threadId: session.threadId, turn: { id: turn.id, status: 'completed' } } });
+    await assert.rejects(() => f.gateway.history(session.id), /not supported yet/);
+  } finally { f.clean(); }
+});
+
+test('active history does not hide transport or unrelated runtime failures', async () => {
+  const f = fixture();
+  try {
+    const session = (await f.gateway.create('sample')).session;
+    await f.gateway.turn(session.id, { text: 'Synthetic active turn' });
+    f.runtimes[0].request = async () => { throw new Error('Runtime response timed out.'); };
+    await assert.rejects(() => f.gateway.history(session.id), /timed out/);
+  } finally { f.clean(); }
+});

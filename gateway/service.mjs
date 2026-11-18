@@ -134,9 +134,21 @@ export class AgentGateway {
     const session = this.session(id), runtime = await this.runtime(this.project(session.projectId));
     const params = { threadId: session.threadId, limit: 100, sortDirection: 'desc' };
     if (cursor) params.cursor = text(cursor, 1000);
-    const history = session.hasTurns ? await runtime.request('thread/items/list', params) : { data: [], nextCursor: null };
+    let history = { data: [], nextCursor: null }, replayOnly = false;
+    const readingActiveTurn = live.has(session.status);
+    if (session.hasTurns) {
+      try { history = await runtime.request('thread/items/list', params); }
+      catch (error) {
+        // Codex can expose the pagination method in its schema but reject it for
+        // a first live turn before durable history exists. Keep live replay and
+        // scoped pending decisions available; never turn this into an empty,
+        // supposedly complete transcript or mask unrelated runtime failures.
+        if (!readingActiveTurn || cursor || error.runtimeCode !== -32601 || !/not supported yet/i.test(error.message)) throw error;
+        replayOnly = true;
+      }
+    }
     const pendingRequests = [...this.pendingApprovals].filter(([, item]) => item.sessionId === id).map(([requestId, item]) => ({ type: item.method, params: { ...item.params, requestId } }));
-    return { session: this.view(session), history, pendingRequests };
+    return { session: this.view(session), history, pendingRequests, ...(replayOnly ? { replayOnly: true, replayAfter: 0, historyIncomplete: true } : {}) };
   }
   async turn(id, input) {
     const session = this.session(id); text(input.text);
