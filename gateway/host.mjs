@@ -1,0 +1,14 @@
+import { readFileSync, statSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { AgentGateway } from './service.mjs';
+import { createGatewayServer } from './server.mjs';
+const file = process.argv[2];
+if (!file) throw new Error('Provide the private gateway configuration JSON path.');
+if (process.platform !== 'win32' && (statSync(file).mode & 0o077)) throw new Error('Gateway configuration must be readable only by its owner (chmod 600).');
+const config = JSON.parse(readFileSync(file, 'utf8'));
+const host = config.host || '127.0.0.1', port = config.port || 8754;
+if (!['127.0.0.1', '::1', 'localhost'].includes(host)) throw new Error('The private-config launcher is loopback-only. Use the TLS-configured server entry point for other listeners.');
+const gateway = new AgentGateway({ projects: config.projects, stateDirectory: resolve(config.stateDirectory), command: config.command || 'codex' });
+const server = createGatewayServer({ gateway, token: config.token });
+server.listen(port, host, () => console.log(`STATION agent gateway listening on http://${host}:${server.address().port}`));
+for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => { gateway.close(); server.close(); setTimeout(() => process.exit(0), 3000).unref(); });

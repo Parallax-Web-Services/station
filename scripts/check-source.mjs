@@ -2,7 +2,7 @@ import { readdir, readFile, lstat } from 'node:fs/promises';
 import { resolve, relative, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const root=fileURLToPath(new URL('..',import.meta.url));
-const excluded=new Set(['.git','node_modules','bin','obj','artifacts','.build']);
+const excluded=new Set(['.git','node_modules','bin','obj','artifacts','.build','.state']);
 const errors=[];
 const secrets=[/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,/\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{30,}\b/,/\bAKIA[A-Z0-9]{16}\b/,/\bsk-(?:proj-)?[A-Za-z0-9_-]{40,}\b/];
 async function walk(dir){for(const item of await readdir(dir,{withFileTypes:true})){

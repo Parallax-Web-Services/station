@@ -16,3 +16,6 @@ workspace-profiles/
 shell-profile/
 drafts/
 evidence/
+
+.state/
+gateway-config.json

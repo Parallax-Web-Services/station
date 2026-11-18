@@ -49,6 +49,14 @@ See the [Codex Desktop feature parity audit](docs/CODEX-DESKTOP-PARITY.md) for t
 
 Windows is the only implemented desktop host. Mobile/web continuity, aggregated cloud resources, general CONTINUUM conversation, broad workspace search, provider/model integration, installer signing and automatic updates remain incomplete. Project task/subtask creation requires the corresponding service hierarchy API. Local terminals close with Station; cloud execution is owned by the execution service. Drafts do not sync between devices.
 
+## Connected-host coding gateway
+
+An optional [shared agent gateway](docs/AGENT-GATEWAY.md) exposes configured project roots, persisted runtime sessions, live replayable activity, steering, interruption, one-use decisions and read-only Git diffs. It uses a replaceable Codex App Server adapter; the existing SLIPSTREAM service remains the business workstream authority.
+
+Run `npm run test:gateway` for isolated protocol/security checks. `node scripts/check-gateway-runtime.mjs` checks the installed host runtime without starting a model turn; add `--turn` only to explicitly run bounded provider-backed stream/restart/interrupt verification using the host's supported sign-in.
+
+The gateway requires its own private bearer credential and a host-owner root allowlist. It is loopback-only without TLS; Android can use an explicitly configured ADB reverse tunnel. See the contract for setup and security boundaries. Running it independently keeps execution alive when a UI closes, but the host must stay awake. This is not proof that a local session continues after the host stops, or that a signed desktop/mobile release has shipped.
+
 ## Structure
 
 | Path | Purpose |
