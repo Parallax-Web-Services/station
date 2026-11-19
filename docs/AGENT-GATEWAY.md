@@ -73,3 +73,49 @@ When the runtime rejects history pagination as not yet supported during a live t
 The optional private configuration fields `inspectionToken` and `inspectionProjects` issue a separate credential limited to GET inspections of explicitly listed project IDs. That credential cannot list sessions, start turns, access provider identity, or change files. Do not give the full coding credential to an inspection consumer.
 
 `node gateway/host-link.mjs /private/host-link.json` maintains an owner-configured outbound SSH link using the existing SSH account. The owner-only JSON selects `sshTarget`, `localPort`, and `remotePort`; both forwarded TCP endpoints bind loopback. It reconnects with bounded backoff and stops on SIGTERM. An independently authenticated owned HTTPS service can consume that private endpoint; this is not public ingress, general host enrollment, or proof of operation after the execution host shuts down.
+
+## Explicitly approved builds
+
+The optional private launcher fields `buildToken` and `buildProjects` register a
+separate purpose credential and an explicit configured-project allowlist. This
+credential can access only `/v1/builds` operations; it cannot read provider identity,
+list ordinary sessions, or use the inspection credential. No build capability is
+enabled by default. The cloud consumer remains bound to its authorized user,
+workspace and resource; a project name or URL alone is not authorization.
+
+`POST /v1/builds` accepts `{reference, projectId, approvedPlan, planSha256}`. The UUID
+and SHA-256 of the exact UTF-8 approved plan identify one execution. A new execution
+creates a Git worktree at the configured repository's HEAD and reuses the existing
+AgentGateway runtime with workspace-write sandbox and on-request approvals. Local
+source changes are not copied into the worktree. Repeating a reference returns the
+saved execution rather than starting a second model turn. A lost turn receipt is
+unknown, never permission to submit another turn automatically.
+
+`GET /v1/builds/{reference}?diff=1` returns `{build}` with status, runtime session,
+actual pending requests, command outcomes, branch/base, and bounded diff evidence.
+Untracked text files are included where supported; omitted or oversized material
+sets `truncated`. SHA-256 identifies the returned excerpt, not a signature or proof
+that a mutable checkout is atomically snapshotted. An over-limit Git operation
+fails instead of reporting fabricated completion.
+
+Explicit POST controls use `/{reference}/resume`, `/interrupt`, `/steer`,
+`/approvals/{requestId}` and `/questions/{requestId}`, with the same current-turn and
+one-use request checks as ordinary sessions. No decision is automatically accepted.
+The adapter has no merge or publication operation; plan approval does not authorize
+publishing, deployment, paid provisioning, or changes to external systems. Changes
+remain in the isolated checkout for review. Runtime activity is not a guarantee of
+correctness; inspect the actual diff and command results.
+
+CONTINUUM owns the durable scoping meeting and exact plan approval. SLIPSTREAM owns
+the actual workstream/task and execution receipt. STATION supplies only the approved
+host checkout and existing runtime. A host restart can restore receipts and session
+references; an uncertain active run needs explicit recovery. The connected host must
+remain available. Closing a client does not stop it; shutting down the host does.
+
+On 19 November 2026, one operator-initiated real CONTINUUM plan and exact approval
+produced an actual STATION code change through SLIPSTREAM and the existing signed-in
+Codex runtime. The returned diff hash matched, the requested syntax check passed,
+and the primary checkout remained clean. The real result also rendered in the
+mobile UI using read-only requests. This establishes the bounded backend workflow,
+not native spoken dictation, phone-initiated approval, arbitrary project enrollment,
+unattended permissions, or execution after host shutdown.
