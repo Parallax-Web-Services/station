@@ -20,8 +20,10 @@ test('approved build uses a separate checkout, restricted credential, one turn a
   const factory = options => ({ async initialize() {}, close() {}, reject() {}, async request(method, params) {
     if (method === 'thread/start') { assert.equal(params.approvalPolicy, 'on-request'); assert.equal(params.sandbox, 'workspace-write'); return { thread: { id: 'fixture-thread' } }; }
     if (method === 'turn/start') {
-      turns++; const turn = { id: 'fixture-turn', status: 'completed' };
-      writeFileSync(join(options.cwd, 'added.txt'), 'Actual isolated fixture change\n');
+      turns++;
+      if (turns === 2) assert.equal(readFileSync(join(options.cwd, 'added.txt'), 'utf8').replaceAll('\r\n', '\n'), 'Actual isolated fixture change\n');
+      const turn = { id: 'fixture-turn', status: 'completed' };
+      writeFileSync(join(options.cwd, 'added.txt'), turns === 1 ? 'Actual isolated fixture change\n' : 'Revised fixture change\n');
       options.onEvent({ method: 'turn/completed', params: { threadId: params.threadId, turn } });
       return { turn };
     }
@@ -49,5 +51,19 @@ test('approved build uses a separate checkout, restricted credential, one turn a
     await new Promise(resolve => server.close(resolve)); origin = await start();
     const recovered = await (await request('/v1/builds/' + reference, build)).json();
     assert.equal(recovered.build.status, 'completed'); assert.equal(recovered.build.planSha256, body.planSha256); assert.equal(turns, 1);
+    const next = '00000000-0000-4000-8000-000000000002';
+    const revision = diff_sha256 => {
+      const plan = JSON.stringify({ summary: 'Revise added.txt', continuation: { reference, plan_sha256: body.planSha256, diff_sha256 } });
+      return { ...body, reference: next, approvedPlan: plan, planSha256: createHash('sha256').update(plan).digest('hex') };
+    };
+    assert.equal((await request('/v1/builds', build, revision('0'.repeat(64)))).status, 409);
+    const follow = revision(result.build.diffSha256);
+    const revised = await (await request('/v1/builds', build, follow)).json();
+    assert.ok(revised.build, JSON.stringify(revised));
+    assert.equal(revised.build.continuedFrom, reference);
+    assert.match(revised.build.diff, /Revised fixture change/);
+    assert.equal((await request('/v1/builds', build, follow)).status, 200);
+    assert.equal(turns, 2);
+    assert.equal((await (await request('/v1/builds/' + reference, build)).json()).build.diffSha256, result.build.diffSha256);
   } finally { if (server?.listening) await new Promise(resolve => server.close(resolve)); rmSync(folder, { recursive: true, force: true }); }
 });
