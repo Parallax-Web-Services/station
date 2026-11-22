@@ -92,6 +92,8 @@ export class ApprovedBuilds {
     const status = await this.git(root, ['status', '--porcelain=v1', '--ignore-submodules=all']);
     let diff = await this.git(root, ['diff', record.base, '--no-ext-diff', '--no-textconv', '--ignore-submodules=all', '--']);
     const untracked = (await this.git(root, ['ls-files', '--others', '--exclude-standard', '-z'])).split('\0').filter(Boolean);
+    const tracked = (await this.git(root, ['diff', '--name-only', '-z', record.base, '--no-ext-diff', '--no-textconv', '--ignore-submodules=all', '--'])).split('\0').filter(Boolean);
+    const changedFiles = [...new Set([...tracked, ...untracked])];
     let truncated = false;
     for (const name of untracked) {
       if (diff.length > 256000) { truncated = true; break; }
@@ -100,7 +102,8 @@ export class ApprovedBuilds {
       diff += await this.git(root, ['diff', '--no-index', '--no-ext-diff', '--no-textconv', '--', '/dev/null', name], { diff: true });
     }
     truncated ||= diff.length > 256000; diff = diff.slice(0, 256000);
-    return { workingTreeStatus: status, diff, diffSha256: hash(diff), truncated };
+    return { workingTreeStatus: status, diff, diffSha256: hash(diff), truncated,
+      changedFiles: changedFiles.slice(0, 100), changedFilesTruncated: changedFiles.length > 100 };
   }
   async control(id, action, input) {
     return this.exclusive(id, async () => {
